@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from typing import TypedDict
 load_dotenv()
 
-model = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
+model = ChatOpenAI(model="gpt-4o", temperature=0.0)
 
 
 
@@ -37,32 +37,13 @@ def graph_simple():
     app = graph.compile()
 
 
+    # run app
+    result = app.invoke({"input": "hello", "output": "", "step": 0})
 
-
-
- 
-
-
-
-
-
+    print("simple graph result:", result)
+    print(f" Input: {result['input']}, Output: {result['output']}, Step: {result['step']}")
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-def main():
-    print("Hello from learning-langgraph!")
-
-
-if __name__ == "__main__":
-    main()
