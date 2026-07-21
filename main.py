@@ -60,15 +60,6 @@ def demo_accumulating_state():
         .compile()
     )
 
-    # visualize the graph
-    print("\n--- Mermaid Graph ---")
-    print(app.get_graph().draw_mermaid())
-
-    png_bytes = app.get_graph().draw_mermaid_png()
-    with open("graph_2.png", "wb") as f:
-        f.write(png_bytes)
-    print("\nGraph saved to graph_2.png")
-
     result = app.invoke({"messages": ["Initial message"], "count": 0})
 
     print("\nAccumulating State Result:")
@@ -106,77 +97,6 @@ def demo_message_state():
         print(f"  {role}: {msg.content}")
 
 
-# === Multi-Node Graph ===
-class MultiStepState(TypedDict):
-    input: str
-    analyzed: str
-    enhanced: str
-    final: str
-
-
-def demo_multi_node_graph():
-    llm = init_chat_model("gpt-4o-mini", temperature=0)
-
-    def analyze_node(state: MultiStepState) -> dict:
-        response = llm.invoke(
-            [
-                HumanMessage(
-                    content=f"Analyze the following input and summarize it in one sentence: {state['input']}"
-                )
-            ]
-        )
-        return {"analyzed": response.content}
-
-    def enhance_node(state: MultiStepState) -> dict:
-        response = llm.invoke(
-            [
-                HumanMessage(
-                    content=f"Take the following analysis and enhance it with more details: {state['analyzed']}"
-                )
-            ]
-        )
-        return {"enhanced": response.content}
-
-    def finalize_node(state: MultiStepState) -> dict:
-        response = llm.invoke(
-            [
-                HumanMessage(
-                    content=f"Take the following enhanced analysis and finalize it into a concise summary: {state['enhanced']}"
-                )
-            ]
-        )
-        return {"final": response.content}
-
-    app = (
-        StateGraph(MultiStepState)
-        .add_node(analyze_node)
-        .add_node(enhance_node)
-        .add_node(finalize_node)
-        .add_edge(START, "analyze_node")
-        .add_edge("analyze_node", "enhance_node")
-        .add_edge("enhance_node", "finalize_node")
-        .add_edge("finalize_node", END)
-        .compile()
-    )
-
-    # visualize the graph
-    print("\n--- Mermaid Graph ---")
-    print(app.get_graph().draw_mermaid())
-
-    png_bytes = app.get_graph().draw_mermaid_png()
-    with open("graph_3.png", "wb") as f:
-        f.write(png_bytes)
-    print("\nGraph saved to graph_3.png")
-
-    result = app.invoke({"input": "Artificial intelligence"})
-
-    print("\nMulti-Node Graph Result:")
-    print(f"  Input: {result['input']}")
-    print(f"  Analyzed: {result['analyzed'][:100]}...")
-    print(f"  Enhanced: {result['enhanced'][:100]}...")
-    print(f"  Final: {result['final']}")
-
-
 # Exercise
 def exercise_first_langgraph():
     """
@@ -196,14 +116,24 @@ def exercise_first_langgraph():
 
     def generate_questions(state: QAState) -> dict:
         response = llm.invoke(
-            f"Generate 3 interesting questions about: {state['topic']}\n"
-            "Format: numbered list"
+            [
+                HumanMessage(
+                    content=(
+                        f"Generate 3 interesting questions about: {state['topic']}\n"
+                        "Format: numbered list"
+                    )
+                )
+            ]
         )
         return {"questions": response.content}
 
     def answer_question(state: QAState) -> dict:
         response = llm.invoke(
-            f"Answer the first question from this list:\n{state['questions']}"
+            [
+                HumanMessage(
+                    content=f"Answer the first question from this list:\n{state['questions']}"
+                )
+            ]
         )
         return {"answer": response.content}
 
@@ -226,9 +156,14 @@ def exercise_first_langgraph():
 
 
 if __name__ == "__main__":
-    # demo_simple_graph()
-    # demo_accumulating_state()
-    # go to .env LANGSMITH_TRACING=false to disable langsmith tracing for the next example, or set it to true to see the tracing in action
-    # demo_message_state()
-    # demo_multi_node_graph()
+    print("=== 1. Simple graph ===")
+    demo_simple_graph()
+
+    print("\n=== 2. Accumulating state (reducers) ===")
+    demo_accumulating_state()
+
+    print("\n=== 3. Message state + LLM ===")
+    demo_message_state()
+
+    print("\n=== 4. Exercise ===")
     exercise_first_langgraph()
